@@ -1,5 +1,4 @@
-import { initializeApp, cert } from "firebase-admin/app"
-import { getFirestore } from "firebase-admin/firestore"
+import { Firestore } from "firebase-admin/firestore"
 
 export enum SubscriberConsistency {
     STRONG = "STRONG",
@@ -16,29 +15,7 @@ interface SubscribersDB {
     query(eventType: string): Promise<SubscriberLocation[]>
 }
 
-function setupFirebase() {
-    // production, use firebase with SA credentials passed from environment
-    if (process.env.SERVICE_ACCOUNT) {
-        const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT)
-        initializeApp({
-            credential: cert(serviceAccount)
-        })
-
-    }
-    // dev, use firebase emulator
-    else {
-        if (!process.env.FIRESTORE_EMULATOR_HOST) {
-            throw new Error("Firestore emulator is not running!")
-        }
-        initializeApp({ projectId: "dev" })
-    }
-    return getFirestore()
-}
-
-
-
-const FirebaseSubscribersDB: () => SubscribersDB = () => {
-    const db = setupFirebase()
+function FirebaseSubscribersDB(db: Firestore): SubscribersDB {
     return {
         async saveSubscriber(subscriber: Subscriber) {
             await db.collection("subscribers").doc(subscriber.api).set(subscriber)
