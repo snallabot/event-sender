@@ -51,7 +51,7 @@ router.post("/subscribe", async (ctx) => {
     await subcribersDB.saveSubscriber(req)
     ctx.status = 200
 })
-    .del("/unsubscribe", async (ctx) => {
+    .post("/unsubscribe", async (ctx) => {
         const apiReq = ctx.request.body as { api: string }
         await subcribersDB.deleteSubscriber(apiReq.api)
         ctx.status = 200
