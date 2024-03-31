@@ -10,6 +10,9 @@
     "dev": "nodemon src/index.ts",
     "devfull": "npx firebase --project dev emulators:start & FIRESTORE_EMULATOR_HOST=localhost:8080 nodemon src/server.ts && kill $!"
   },
+  "engines": {
+  "node": "20.x"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/snallabot/event-sender.git"
