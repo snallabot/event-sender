@@ -19,9 +19,7 @@ function FirebaseEventDB(db: Firestore): EventDB {
         },
         async queryEvents(event_type: string, key: string) {
             const events = await db.collection("events").doc(key).collection(event_type).get()
-            const storedEvents = [] as StoredEvent[]
-            events.forEach(d => storedEvents.push((d.data() as StoredEvent)))
-            return storedEvents
+            return events.docs.map(doc => doc.data() as StoredEvent)
         }
     }
 }
