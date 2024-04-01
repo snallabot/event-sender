@@ -80,7 +80,7 @@ router.post("/subscribe", async (ctx) => {
     .post("/query", async (ctx) => {
         const queryReq = ctx.request.body as QueryRequest
         const events = await Promise.all(queryReq.event_types.map((event_type) => {
-            return eventDB.queryEvents(queryReq.key, event_type).then(events => ({ [event_type]: events }))
+            return eventDB.queryEvents(queryReq.key, event_type).then(e => ({ [event_type]: e }))
         }))
         ctx.response.body = Object.assign({}, ...events)
     })
