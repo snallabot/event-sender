@@ -33,6 +33,8 @@ const db: Firestore = setupFirebase()
 const subcribersDB = SubscribersDB(db)
 const eventDB = EventDB(db)
 
+type QueryRequest = { key: string, event_types: string[] }
+
 async function retryingPromise(future: () => Promise<Response>, maxTries: number = 5): Promise<Response> {
     let count = 0
     while (count < maxTries) {
@@ -74,6 +76,13 @@ router.post("/subscribe", async (ctx) => {
             method: "POST",
             body: JSON.stringify(incomingEvent)
         }))))
+    })
+    .post("/query", async (ctx) => {
+        const queryReq = ctx.request.body as QueryRequest
+        const events = await Promise.all(queryReq.event_types.map((event_type) => {
+            return eventDB.queryEvents(queryReq.key, event_type).then(events => ({ [event_type]: events }))
+        }))
+        ctx.response.body = Object.assign({}, ...events)
     })
 
 
