@@ -1,2 +1,63 @@
 # event-sender
-an event sender for madden related events
+an event sender for madden related events. This distributes events to many consumers while also keeping a store of every event sent. Documentation of the current events TBD.
+
+## API
+
+All REST calls can be made to this endpoint. They are json requests and require the content type header. 
+
+```
+deployment: https://snallabot-event-sender-b869b2ccfed0.herokuapp.com/
+```
+
+### Subscribe
+
+```
+/subscribe
+```
+
+POST request to add your server as a subscriber to events. 
+
+| Body Parameter | Description | Type
+| --- | ---- | --- |
+| api | The url that will be called with subscribed events | String |
+| consistency | STRONG or WEAK . If you are not sure which to use, use WEAK. STRONG guarantees that your server completes the request and will retry calls. This should be unnecessary for most cases | Enum, STRONG, WEAK |
+| events | a list of event names that you are subscribing to | List of String | 
+
+```
+/unsubscribe
+```
+
+POST request to remove your server as a describer
+
+| Body Parameter | Description | Type
+| --- | ---- | --- |
+| api | The url that will be removed | String |
+
+### Events
+
+```
+/post
+```
+
+POST request to send an event 
+
+| Body Parameter | Description | Type
+| --- | ---- | --- |
+| key | the key of the event, this makes it queryable | String |
+| event_type | a unique identifying event name | String |
+
+Any other fields can be added and will be retrievable. The above are required
+
+```
+/query
+```
+
+POST request to retrieve events
+
+| Body Parameter | Description | Type
+| --- | ---- | --- |
+| key | the key of the event you are querying for | String |
+| event_type | the events you are querying for  | List of String |
+
+
+
