@@ -2,7 +2,7 @@ import Koa from "koa"
 import Router from "@koa/router"
 import bodyParser from "@koa/bodyparser"
 import SubscribersDB, { Subscriber, SubscriberConsistency } from "./subscribers_db"
-import EventDB, { SnallabotEvent, StoredEvent } from "./event_db"
+import EventDB, { SnallabotEvent } from "./event_db"
 import { initializeApp, cert } from "firebase-admin/app"
 import { getFirestore, Firestore } from "firebase-admin/firestore"
 
@@ -47,7 +47,11 @@ async function retryingPromise(future: () => Promise<Response>, maxTries: number
     }
     throw Error("Failed to post event")
 }
-
+enum Delivery {
+    EVENT_TRANSFER = "EVENT_TRANSFER",
+    EVENT_SOURCE = "EVENT_SOURCE"
+}
+type PostSenderRequest = SnallabotEvent & { delivery: Delivery }
 router.post("/subscribe", async (ctx) => {
     const req = ctx.request.body as Subscriber
     await subcribersDB.saveSubscriber(req)
@@ -59,10 +63,12 @@ router.post("/subscribe", async (ctx) => {
         ctx.status = 200
     })
     .post("/post", async (ctx, next) => {
-        const incomingEvent = ctx.request.body as SnallabotEvent
+        const incomingEvent = ctx.request.body as PostSenderRequest
         ctx.status = 202
         await next()
-        await eventDB.appendEvent(incomingEvent)
+        if (incomingEvent.delivery === "EVENT_SOURCE") {
+            await eventDB.appendEvent(incomingEvent)
+        }
         const subscribers = await subcribersDB.query(incomingEvent.event_type)
         const strongConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.STRONG)
         const weakConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.WEAK)
