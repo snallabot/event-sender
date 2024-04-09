@@ -45,6 +45,7 @@ POST request to send an event
 | --- | ---- | --- |
 | key | the key of the event, this makes it queryable | String |
 | event_type | a unique identifying event name | String |
+| delivery | how the event will be processed. `EVENT_SOURCE` means the event will be appended to a log for retrieval and signal subcribers. `EVENT_TRANSFER` means the event will only be used as a trigger and will not be used for any later processing/business logic. If you need to retrieve this event data at a later point use `EVENT_SOURCE`. | `EVENT_SOURCE, EVENT_TRANSFER`
 
 Any other fields can be added and will be retrievable. The above are required
 
@@ -58,7 +59,6 @@ POST request to retrieve events
 | --- | ---- | --- |
 | key | the key of the event you are querying for | String |
 | event_type | the events you are querying for  | List of String |
-| delivery | how the event will be processed. `EVENT_SOURCE` means the event will be appended to a log for retrieval and signal subcribers. `EVENT_TRANSFER` means the event will only be used as a trigger and will not be used for any later processing/business logic. If you need to retrieve this event data at a later point use `EVENT_SOURCE`. | `EVENT_SOURCE, EVENT_TRANSFER`
 
 example:
 
