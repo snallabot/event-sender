@@ -29,6 +29,7 @@ function FirebaseSubscribersDB(db: Firestore): SubscribersDB {
         },
         async query(eventType: string) {
             const subs = await db.collection("subscibrers").where("events", "array-contains", eventType).get()
+            console.log(subs)
             return subs.docs.map(d => d.data() as SubscriberLocation)
         }
 
