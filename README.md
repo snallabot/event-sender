@@ -58,7 +58,7 @@ POST request to retrieve events
 | Body Parameter | Description | Type
 | --- | ---- | --- |
 | key | the key of the event you are querying for | String |
-| event_type | the events you are querying for  | List of String |
+| event_types | the events you are querying for  | List of String |
 
 example:
 
