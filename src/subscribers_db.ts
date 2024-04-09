@@ -1,4 +1,5 @@
 import { Firestore } from "firebase-admin/firestore"
+import { randomUUID } from "crypto"
 
 export enum SubscriberConsistency {
     STRONG = "STRONG",
@@ -18,10 +19,13 @@ interface SubscribersDB {
 function FirebaseSubscribersDB(db: Firestore): SubscribersDB {
     return {
         async saveSubscriber(subscriber: Subscriber) {
-            await db.collection("subscribers").doc(subscriber.api).set(subscriber)
+            await db.collection("subscribers").doc(randomUUID()).set(subscriber)
         },
         async deleteSubscriber(api: string) {
-            await db.collection("subscribers").doc(api).delete()
+            const docs = await db.collection("subscribers").where("api", "==", api).get()
+            const promises: Array<Promise<any>> = []
+            docs.forEach(doc => promises.push(doc.ref.delete()))
+            await Promise.all(promises)
         },
         async query(eventType: string) {
             const docs = await db.collection("subscibrers").where("events", "array-contains", eventType).get()
