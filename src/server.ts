@@ -70,6 +70,7 @@ router.post("/subscribe", async (ctx) => {
             const { delivery, ...snallabotEvent } = incomingEvent
             await eventDB.appendEvent(snallabotEvent)
         }
+        console.log(incomingEvent)
         const subscribers = await subcribersDB.query(incomingEvent.event_type)
         console.log(subscribers)
         const strongConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.STRONG)
