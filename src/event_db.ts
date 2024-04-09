@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto"
-import { Firestore } from "firebase-admin/firestore"
+import { Firestore, Timestamp } from "firebase-admin/firestore"
 
 type EventId = string
 export type SnallabotEvent = { key: string, event_type: string, [key: string]: any }
@@ -8,6 +8,27 @@ export type StoredEvent = SnallabotEvent & { timestamp: Date, id: EventId }
 interface EventDB {
     appendEvent(event: SnallabotEvent): Promise<void>
     queryEvents(event_type: string, key: string): Promise<StoredEvent[]>
+}
+
+function convertDate(firebaseObject: any) {
+    if (!firebaseObject) return null;
+
+    for (const [key, value] of Object.entries(firebaseObject)) {
+
+        // covert items inside array
+        if (value && Array.isArray(value))
+            firebaseObject[key] = value.map(item => convertDate(item));
+
+        // convert inner objects
+        if (value && typeof value === 'object') {
+            firebaseObject[key] = convertDate(value);
+        }
+
+        // convert simple properties
+        if (value && value.hasOwnProperty('_seconds'))
+            firebaseObject[key] = (value as Timestamp).toDate();
+    }
+    return firebaseObject;
 }
 
 function FirebaseEventDB(db: Firestore): EventDB {
@@ -19,7 +40,7 @@ function FirebaseEventDB(db: Firestore): EventDB {
         },
         async queryEvents(key: string, event_type: string) {
             const events = await db.collection("events").doc(key).collection(event_type).get()
-            return events.docs.map(doc => doc.data() as StoredEvent)
+            return events.docs.map(doc => convertDate(doc.data()) as StoredEvent)
         }
     }
 }
