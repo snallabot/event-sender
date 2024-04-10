@@ -77,12 +77,20 @@ router.post("/subscribe", async (ctx) => {
         weakConsistency.map(api =>
             fetch(api.api, {
                 method: "POST",
-                body: JSON.stringify(incomingEvent)
+                body: JSON.stringify(incomingEvent),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+
             })
         )
         await Promise.all(strongConsistency.map(api => retryingPromise(() => fetch(api.api, {
             method: "POST",
-            body: JSON.stringify(incomingEvent)
+            body: JSON.stringify(incomingEvent),
+            headers: {
+                "Content-Type": "application/json"
+            }
+
         }))))
     })
     .post("/query", async (ctx) => {
