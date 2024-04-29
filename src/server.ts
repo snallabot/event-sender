@@ -64,8 +64,9 @@ async function sendEvent(incomingEvents: Array<SnallabotEvent>, delivery: Delive
         console.log(subscribers)
         const strongConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.STRONG)
         const weakConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.WEAK)
+        const events = incomingEvents.filter(e => e.event_type === event_type)
         weakConsistency.map(api =>
-            Promise.all(incomingEvents.map(incomingEvent =>
+            Promise.all(events.map(incomingEvent =>
                 fetch(api.api, {
                     method: "POST",
                     body: JSON.stringify(incomingEvent),
@@ -75,7 +76,7 @@ async function sendEvent(incomingEvents: Array<SnallabotEvent>, delivery: Delive
                 })))
         )
         await Promise.all(strongConsistency.map(api =>
-            Promise.all(incomingEvents.map(incomingEvent =>
+            Promise.all(events.map(incomingEvent =>
                 retryingPromise(() => fetch(api.api, {
                     method: "POST",
                     body: JSON.stringify(incomingEvent),
