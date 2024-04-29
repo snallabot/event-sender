@@ -37,7 +37,6 @@ function FirebaseEventDB(db: Firestore): EventDB {
             const batch = db.batch()
             console.log(events)
             events.forEach(event => {
-                console.log(event)
                 const eventId = randomUUID()
                 const doc = db.collection("events").doc(event.key).collection(event.event_type).doc(eventId)
                 batch.set(doc, { ...event, timestamp: new Date(), id: eventId })
