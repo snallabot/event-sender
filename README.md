@@ -50,6 +50,20 @@ POST request to send an event
 Any other fields can be added and will be retrievable. The above are required
 
 ```
+/batchPost
+```
+
+POST request to send a batch of events
+
+| Body Parameter | Description | Type
+| --- | ---- | --- |
+| batch | list of events | list of event with `key` and `event_type` per event |
+| delivery | how the event will be processed. `EVENT_SOURCE` means the event will be appended to a log for retrieval and signal subcribers. `EVENT_TRANSFER` means the event will only be used as a trigger and will not be used for any later processing/business logic. If you need to retrieve this event data at a later point use `EVENT_SOURCE`. | `EVENT_SOURCE, EVENT_TRANSFER`
+
+Any other fields can be added and will be retrievable. The above are required
+
+
+```
 /query
 ```
 
@@ -59,6 +73,7 @@ POST request to retrieve events
 | --- | ---- | --- |
 | key | the key of the event you are querying for | String |
 | event_types | the events you are querying for  | List of String |
+| after | the time after to query events for | Integer, milliseconds since Epoch |
 
 example:
 
