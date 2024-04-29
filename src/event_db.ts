@@ -6,8 +6,8 @@ export type SnallabotEvent = { key: string, event_type: string, [key: string]: a
 export type StoredEvent = SnallabotEvent & { timestamp: Date, id: EventId }
 
 interface EventDB {
-    appendEvent(event: SnallabotEvent): Promise<void>
-    queryEvents(event_type: string, key: string): Promise<StoredEvent[]>
+    appendEvents(event: Array<SnallabotEvent>): Promise<void>
+    queryEvents(event_type: string, key: string, after: Date): Promise<StoredEvent[]>
 }
 
 function convertDate(firebaseObject: any) {
@@ -33,13 +33,19 @@ function convertDate(firebaseObject: any) {
 
 function FirebaseEventDB(db: Firestore): EventDB {
     return {
-        async appendEvent(event: SnallabotEvent) {
-            const eventId = randomUUID()
-            const doc = db.collection("events").doc(event.key).collection(event.event_type).doc(eventId)
-            await doc.set({ ...event, timestamp: new Date(), id: eventId })
+        async appendEvents(events: Array<SnallabotEvent>) {
+            const batch = db.batch()
+            console.log(events)
+            events.forEach(event => {
+                console.log(event)
+                const eventId = randomUUID()
+                const doc = db.collection("events").doc(event.key).collection(event.event_type).doc(eventId)
+                batch.set(doc, { ...event, timestamp: new Date(), id: eventId })
+            })
+            await batch.commit()
         },
-        async queryEvents(key: string, event_type: string) {
-            const events = await db.collection("events").doc(key).collection(event_type).get()
+        async queryEvents(key: string, event_type: string, after: Date) {
+            const events = await db.collection("events").doc(key).collection(event_type).where("timestamp", ">", after).get()
             return events.docs.map(doc => convertDate(doc.data()) as StoredEvent)
         }
     }

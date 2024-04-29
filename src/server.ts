@@ -33,7 +33,7 @@ const db: Firestore = setupFirebase()
 const subcribersDB = SubscribersDB(db)
 const eventDB = EventDB(db)
 
-type QueryRequest = { key: string, event_types: string[] }
+type QueryRequest = { key: string, event_types: string[], after: number }
 
 async function retryingPromise(future: () => Promise<Response>, maxTries: number = 5): Promise<Response> {
     let count = 0
@@ -47,11 +47,48 @@ async function retryingPromise(future: () => Promise<Response>, maxTries: number
     }
     throw Error("Failed to post event")
 }
+
 enum Delivery {
     EVENT_TRANSFER = "EVENT_TRANSFER",
     EVENT_SOURCE = "EVENT_SOURCE"
 }
+
+async function sendEvent(incomingEvents: Array<SnallabotEvent>, delivery: Delivery): Promise<void> {
+    if (delivery === "EVENT_SOURCE") {
+
+        await eventDB.appendEvents(incomingEvents)
+    }
+    const event_types = [...new Set(incomingEvents.map(e => e.event_type))]
+    await Promise.all(event_types.map(async event_type => {
+        const subscribers = await subcribersDB.query(event_type)
+        console.log(subscribers)
+        const strongConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.STRONG)
+        const weakConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.WEAK)
+        weakConsistency.map(api =>
+            Promise.all(incomingEvents.map(incomingEvent =>
+                fetch(api.api, {
+                    method: "POST",
+                    body: JSON.stringify(incomingEvent),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })))
+        )
+        await Promise.all(strongConsistency.map(api =>
+            Promise.all(incomingEvents.map(incomingEvent =>
+                retryingPromise(() => fetch(api.api, {
+                    method: "POST",
+                    body: JSON.stringify(incomingEvent),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }))))))
+    }))
+}
+
+
 type PostSenderRequest = SnallabotEvent & { delivery: Delivery }
+type BatchPostSenderRequest = { delivery: Delivery, batch: Array<SnallabotEvent> }
 router.post("/subscribe", async (ctx) => {
     const req = ctx.request.body as Subscriber
     await subcribersDB.saveSubscriber(req)
@@ -66,37 +103,19 @@ router.post("/subscribe", async (ctx) => {
         const incomingEvent = ctx.request.body as PostSenderRequest
         ctx.status = 202
         await next()
-        if (incomingEvent.delivery === "EVENT_SOURCE") {
-            const { delivery, ...snallabotEvent } = incomingEvent
-            await eventDB.appendEvent(snallabotEvent)
-        }
-        const subscribers = await subcribersDB.query(incomingEvent.event_type)
-        console.log(subscribers)
-        const strongConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.STRONG)
-        const weakConsistency = subscribers.filter(s => s.consistency === SubscriberConsistency.WEAK)
-        weakConsistency.map(api =>
-            fetch(api.api, {
-                method: "POST",
-                body: JSON.stringify(incomingEvent),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-
-            })
-        )
-        await Promise.all(strongConsistency.map(api => retryingPromise(() => fetch(api.api, {
-            method: "POST",
-            body: JSON.stringify(incomingEvent),
-            headers: {
-                "Content-Type": "application/json"
-            }
-
-        }))))
+        const { delivery, ...event } = incomingEvent
+        await sendEvent([event], delivery)
+    })
+    .post("/batchPost", async (ctx, next) => {
+        const incomingEvent = ctx.request.body as BatchPostSenderRequest
+        ctx.status = 202
+        await next()
+        await sendEvent(incomingEvent.batch, incomingEvent.delivery)
     })
     .post("/query", async (ctx) => {
         const queryReq = ctx.request.body as QueryRequest
         const events = await Promise.all(queryReq.event_types.map((event_type) => {
-            return eventDB.queryEvents(queryReq.key, event_type).then(e => ({ [event_type]: e }))
+            return eventDB.queryEvents(queryReq.key, event_type, new Date(queryReq.after)).then(e => ({ [event_type]: e }))
         }))
         ctx.response.body = Object.assign({}, ...events)
     })
