@@ -74,6 +74,7 @@ POST request to retrieve events
 | key | the key of the event you are querying for | String |
 | event_types | the events you are querying for  | List of String |
 | after | the time after to query events for | Integer, milliseconds since Epoch |
+| filter | key value pairs to match events on. If the event has field `x` with value `y`, this should look like `{"x": y}` | key value pair object |
 
 example:
 
