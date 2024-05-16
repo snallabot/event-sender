@@ -36,10 +36,11 @@ function FirebaseEventDB(db: Firestore): EventDB {
         async appendEvents(events: Array<SnallabotEvent>) {
             const batch = db.batch()
             console.log(events)
+            const timestamp = new Date()
             events.forEach(event => {
                 const eventId = randomUUID()
                 const doc = db.collection("events").doc(event.key).collection(event.event_type).doc(eventId)
-                batch.set(doc, { ...event, timestamp: new Date(), id: eventId })
+                batch.set(doc, { ...event, timestamp: timestamp, id: eventId })
             })
             await batch.commit()
         },
