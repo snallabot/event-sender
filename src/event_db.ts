@@ -1,13 +1,14 @@
 import { randomUUID } from "crypto"
-import { Firestore, Timestamp } from "firebase-admin/firestore"
+import { Firestore, Timestamp, Filter } from "firebase-admin/firestore"
 
 type EventId = string
 export type SnallabotEvent = { key: string, event_type: string, [key: string]: any }
 export type StoredEvent = SnallabotEvent & { timestamp: Date, id: EventId }
+export type Filters = { [key: string]: any } | {}
 
 interface EventDB {
     appendEvents(event: Array<SnallabotEvent>): Promise<void>
-    queryEvents(event_type: string, key: string, after: Date): Promise<StoredEvent[]>
+    queryEvents(event_type: string, key: string, after: Date, filters: Filters): Promise<StoredEvent[]>
 }
 
 function convertDate(firebaseObject: any) {
@@ -44,8 +45,15 @@ function FirebaseEventDB(db: Firestore): EventDB {
             })
             await batch.commit()
         },
-        async queryEvents(key: string, event_type: string, after: Date) {
-            const events = await db.collection("events").doc(key).collection(event_type).where("timestamp", ">", after).get()
+        async queryEvents(key: string, event_type: string, after: Date, filters: Filters) {
+            const events = await db.collection("events").doc(key).collection(event_type).where(
+                Filter.and(...[Filter.where("timestamp", ">", after), ...
+                    Object.entries(filters).map(e => {
+                        const [property, value] = e
+                        return Filter.where(property, "==", value)
+                    })]
+
+                )).get()
             return events.docs.map(doc => convertDate(doc.data()) as StoredEvent)
         }
     }
