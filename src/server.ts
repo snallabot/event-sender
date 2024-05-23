@@ -36,7 +36,7 @@ const eventDB = EventDB(db)
 type QueryRequest = {
     key: string, event_types: string[], after: number, filter: {
         [key: string]: any
-    }
+    }, limit: number
 }
 
 async function retryingPromise(future: () => Promise<Response>, maxTries: number = 5): Promise<Response> {
@@ -120,7 +120,7 @@ router.post("/subscribe", async (ctx) => {
     .post("/query", async (ctx) => {
         const queryReq = ctx.request.body as QueryRequest
         const events = await Promise.all(queryReq.event_types.map((event_type) => {
-            return eventDB.queryEvents(queryReq.key, event_type, new Date(queryReq.after), queryReq.filter || {}).then(e => ({ [event_type]: e }))
+            return eventDB.queryEvents(queryReq.key, event_type, new Date(queryReq.after), queryReq.filter || {}, queryReq.limit || 1000).then(e => ({ [event_type]: e }))
         }))
         ctx.response.body = Object.assign({}, ...events)
     })

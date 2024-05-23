@@ -8,7 +8,7 @@ export type Filters = { [key: string]: any } | {}
 
 interface EventDB {
     appendEvents(event: Array<SnallabotEvent>): Promise<void>
-    queryEvents(event_type: string, key: string, after: Date, filters: Filters): Promise<StoredEvent[]>
+    queryEvents(event_type: string, key: string, after: Date, filters: Filters, limit: number): Promise<StoredEvent[]>
 }
 
 function convertDate(firebaseObject: any) {
@@ -45,15 +45,14 @@ function FirebaseEventDB(db: Firestore): EventDB {
             })
             await batch.commit()
         },
-        async queryEvents(key: string, event_type: string, after: Date, filters: Filters) {
+        async queryEvents(key: string, event_type: string, after: Date, filters: Filters, limit: number) {
             const events = await db.collection("events").doc(key).collection(event_type).where(
                 Filter.and(...[Filter.where("timestamp", ">", after), ...
                     Object.entries(filters).map(e => {
                         const [property, value] = e
                         return Filter.where(property, "==", value)
                     })]
-
-                )).get()
+                )).orderBy("timestamp", "desc").limit(limit).get()
             return events.docs.map(doc => convertDate(doc.data()) as StoredEvent)
         }
     }
