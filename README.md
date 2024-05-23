@@ -75,6 +75,7 @@ POST request to retrieve events
 | event_types | the events you are querying for  | List of String |
 | after | the time after to query events for | Integer, milliseconds since Epoch |
 | filter | key value pairs to match events on. If the event has field `x` with value `y`, this should look like `{"x": y}` | key value pair object |
+| limit | the number of events to return, timestamp in descending order, Default is 1000 | Integer
 
 example:
 
