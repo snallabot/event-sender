@@ -36,7 +36,6 @@ function FirebaseEventDB(db: Firestore): EventDB {
     return {
         async appendEvents(events: Array<SnallabotEvent>) {
             const batch = db.batch()
-            console.log(events)
             const timestamp = new Date()
             events.forEach(event => {
                 const eventId = randomUUID()
